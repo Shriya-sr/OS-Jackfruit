@@ -80,25 +80,25 @@ sudo rmmod monitor
 
 <img width="1090" height="360" alt="image" src="https://github.com/user-attachments/assets/0641eda6-3e5b-4ab5-9045-47111cfabba6" />
 
-Caption: Two containers (alpha and beta) running simultaneously under a single supervisor process.
+Two containers (alpha and beta) running simultaneously under a single supervisor process.
 
 2. Metadata tracking
 
 <img width="1090" height="99" alt="image" src="https://github.com/user-attachments/assets/36e9cd22-5c9b-47bc-a54a-dccddaf85539" />
 
-Caption: Output of the ps command showing the tracked state changing from running to killed.
+Output of the ps command showing the tracked state changing from running to killed.
 
 3. Bounded-buffer logging
 
 <img width="1090" height="305" alt="image" src="https://github.com/user-attachments/assets/c3389306-ff21-443b-9ab6-8b7f01eb6ea0" />
 
-Caption: Evidence of the producer/consumer logging pipeline capturing async logs (e.g., [LOG] alpha:started).
+Evidence of the producer/consumer logging pipeline capturing async logs (e.g., [LOG] alpha:started).
 
 4. CLI and IPC communication
 
 <img width="1090" height="75" alt="image" src="https://github.com/user-attachments/assets/6da66add-d36b-4bbd-b9b5-91657c0545dc" />
 
-Caption: A CLI command (ps or stop) being issued and successfully receiving a response from the supervisor via UNIX domain sockets.
+A CLI command (ps or stop) being issued and successfully receiving a response from the supervisor via UNIX domain sockets.
 
 5. Soft-limit and hard-limit warning
 
@@ -109,23 +109,26 @@ Caption: A CLI command (ps or stop) being issued and successfully receiving a re
 <img width="1090" height="292" alt="image" src="https://github.com/user-attachments/assets/16eca9f0-858d-4a24-8b49-09bab3d17399" />
 
 
+
 6. Scheduling experiment
 
 <img width="1090" height="97" alt="image" src="https://github.com/user-attachments/assets/2230a0fd-3d3e-4335-849d-9f373995f510" />
 
+
 <img width="1090" height="761" alt="image" src="https://github.com/user-attachments/assets/c366ecea-4107-4803-a73a-a250913be8bc" />
 
 
-Caption: top output showing the Completely Fair Scheduler allocating 99.0% CPU to the high-priority process (NI -20) and starving the low-priority process (NI 19) down to 0.0%.
+Output showing the Completely Fair Scheduler allocating 99.0% CPU to the high-priority process (NI -20) and starving the low-priority process (NI 19) down to 0.0%.
 
 7. Clean teardown
 
 <img width="1090" height="326" alt="image" src="https://github.com/user-attachments/assets/e869795f-3cb8-401f-873c-bac8d5e6ad35" />
 
-Caption: Supervisor exit messages confirming all remaining containers are reaped via SIGKILL and threads are cleanly joined during shutdown.
+Supervisor exit messages confirming all remaining containers are reaped via SIGKILL and threads are cleanly joined during shutdown.
 
 
 4. Engineering Analysis
+
 Namespace Isolation: Our runtime utilizes the clone() system call with CLONE_NEWPID, CLONE_NEWNS, and CLONE_NEWUTS flags to physically isolate the container's process tree, mount points, and hostnames from the host OS. By executing chroot() into the designated rootfs directory before executing /bin/sh or a workload, the process is completely jailed in a distinct filesystem hierarchy, mirroring the core behavior of enterprise container runtimes like Docker.
 
 Supervisor Architecture: The supervisor operates as a monolithic event loop. It maintains a linked list of container metadata. To prevent zombie processes, the supervisor implements a non-blocking zombie reaper using waitpid(..., WNOHANG). If a process terminates (naturally or via a SIGKILL from our kernel module), the supervisor safely reaps it and updates the metadata state to CONTAINER_EXITED or CONTAINER_KILLED without freezing the main listening socket.
