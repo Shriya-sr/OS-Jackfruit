@@ -59,6 +59,24 @@ sudo ./engine logs alpha
 
 ```
 
+### CFS Priority Scheduling
+Open a Terminal 2:
+```bash
+# 1. Launch the high-priority container (runs for 120 seconds)
+sudo ./engine start alpha ../rootfs-alpha "/cpu_hog 120" --nice -20
+
+# 2. Launch the low-priority container (runs for 120 seconds)
+sudo ./engine start beta ../rootfs-beta "/cpu_hog 120" --nice 19
+
+# 3. Verify they are both running
+sudo ./engine ps
+```
+
+Open Terminal 3
+```bash
+top
+```
+
 ### 🧹 Stop and Clean Up
 ```bash
 # Stop containers safely
