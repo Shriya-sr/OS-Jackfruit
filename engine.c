@@ -15,7 +15,7 @@
  * - signal handling and graceful shutdown
  */
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE 
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -50,61 +50,63 @@
 
 /* Global flag for graceful shutdown */
 volatile sig_atomic_t keep_running = 1;
-
+/*When you press Ctrl+C, it sets the keep_running to 0 and exits the execution of the supervisor*/
 static void handle_signal(int signo)
 {
-    if (signo == SIGINT || signo == SIGTERM) {
+    if (signo == SIGINT || signo == SIGTERM) { //SIGINT = Interrupt, SIGTERM = Termination
         keep_running = 0;
     }
 }
 
 typedef enum {
-    CMD_SUPERVISOR = 0,
-    CMD_START,
-    CMD_RUN,
-    CMD_PS,
-    CMD_LOGS,
-    CMD_STOP
+    CMD_SUPERVISOR = 0, //process should boot up as the long-running daemon itself.
+    CMD_START, //Triggers the spawn container logic
+    CMD_RUN, //Tells the client to wait in the foreground until the container exits
+    CMD_PS, //Read LL and send back the metadate to all the containers
+    CMD_LOGS, //Request the supervisor to read specific log files and stream it
+    CMD_STOP //Commands the supervisor to find a specific PID and send it a SIGKILL
 } command_kind_t;
 
+/*Helps track the lifecycle of the containers, used in PS command, logging and cleanup*/
 typedef enum {
-    CONTAINER_STARTING = 0,
-    CONTAINER_RUNNING,
-    CONTAINER_STOPPED,
-    CONTAINER_KILLED,
-    CONTAINER_EXITED
+    CONTAINER_STARTING = 0, //Container is being created
+    CONTAINER_RUNNING, //Container is actively running
+    CONTAINER_STOPPED, // Gracefully stopped by user
+    CONTAINER_KILLED, // Forcefully killed (SIGKILL or memory limit)
+    CONTAINER_EXITED // Finished normally
 } container_state_t;
 
 typedef struct container_record {
-    char id[CONTAINER_ID_LEN];
-    pid_t host_pid;
-    time_t started_at;
-    container_state_t state;
-    unsigned long soft_limit_bytes;
-    unsigned long hard_limit_bytes;
-    int exit_code;
-    int exit_signal;
-    char log_path[PATH_MAX];
-    struct container_record *next;
+    char id[CONTAINER_ID_LEN]; //Name of the container (alpha, beta), used to identify containers
+    pid_t host_pid; //actual Linux PID of the container process
+    time_t started_at; //When container was launched , useful for logs and scheduling experiments
+    container_state_t state; //Tracks current lifecycle stage
+    unsigned long soft_limit_bytes; //Soft limit → warning only
+    unsigned long hard_limit_bytes;// Hard limit → kill process
+    int exit_code; //If container exits normally: give exit code
+    int exit_signal; //If killed: give exit signal
+    char log_path[PATH_MAX]; //Where logs are stored
+    struct container_record *next; //Points to next container in list
 } container_record_t;
 
 typedef struct {
-    char container_id[CONTAINER_ID_LEN];
-    size_t length;
-    char data[LOG_CHUNK_SIZE];
+    char container_id[CONTAINER_ID_LEN]; //Which container generated this log
+    size_t length; //Size of actual data inside data[]
+    char data[LOG_CHUNK_SIZE]; //Actual log content
 } log_item_t;
 
 typedef struct {
-    log_item_t items[LOG_BUFFER_CAPACITY];
-    size_t head;
-    size_t tail;
-    size_t count;
-    int shutting_down;
-    pthread_mutex_t mutex;
+    log_item_t items[LOG_BUFFER_CAPACITY]; //Array storing log messages
+    size_t head; //Points to next item to remove
+    size_t tail; // Points to next free slot to insert
+    size_t count; //Number of items currently in buffer
+    int shutting_down; 
+    pthread_mutex_t mutex; ////only one thread accesses buffer at a time, mutex
     pthread_cond_t not_empty;
     pthread_cond_t not_full;
 } bounded_buffer_t;
 
+/* It’s a structure used to send commands from the CLI to the supervisor.*/
 typedef struct {
     command_kind_t kind;
     char container_id[CONTAINER_ID_LEN];
@@ -114,12 +116,12 @@ typedef struct {
     unsigned long hard_limit_bytes;
     int nice_value;
 } control_request_t;
-
+/*reply from the supervisor back to the CLI.*/
 typedef struct {
     int status;
     char message[CONTROL_MESSAGE_LEN];
 } control_response_t;
-
+/*holds all the info needed to start a container process.*/
 typedef struct {
     char id[CONTAINER_ID_LEN];
     char rootfs[PATH_MAX];
@@ -127,7 +129,7 @@ typedef struct {
     int nice_value;
     int log_write_fd;
 } child_config_t;
-
+/*main brain/state of the supervisor.*/
 typedef struct {
     int server_fd;
     int monitor_fd;
