@@ -10,17 +10,23 @@
 ---
 
 ### ⚙️ Build, Load, and Run Instructions
+### Prerequisites
+```bash
+sudo apt update
+sudo apt install -y build-essential linux-headers-$(uname -r)
+```
 *Note: These instructions assume a fresh Ubuntu 22.04/24.04 VM environment.*
 
 ### 🛠️ Build the Project
 ```bash
+cd /path/to/OS-Jackfruit
 make
 ```
 
 ### 🧠 Load the Kernel Module
 ```bash
 sudo insmod monitor.ko
-ls -l /dev/container_monitor 
+ls -l /dev/container_monitor ## Verify control device exists
 ```
 
 ### 📦Prepare the Filesystems & Workloads
