@@ -127,7 +127,7 @@ Output showing the Completely Fair Scheduler allocating 99.0% CPU to the high-pr
 Supervisor exit messages confirming all remaining containers are reaped via SIGKILL and threads are cleanly joined during shutdown.
 
 
-4. Engineering Analysis
+### Engineering Analysis
 
 Namespace Isolation: Our runtime utilizes the clone() system call with CLONE_NEWPID, CLONE_NEWNS, and CLONE_NEWUTS flags to physically isolate the container's process tree, mount points, and hostnames from the host OS. By executing chroot() into the designated rootfs directory before executing /bin/sh or a workload, the process is completely jailed in a distinct filesystem hierarchy, mirroring the core behavior of enterprise container runtimes like Docker.
 
