@@ -110,7 +110,7 @@ Two containers (alpha and beta) running simultaneously under a single supervisor
 
 <img width="1090" height="99" alt="image" src="https://github.com/user-attachments/assets/36e9cd22-5c9b-47bc-a54a-dccddaf85539" />
 
-Output of the ps command showing the tracked state changing from running to killed.
+Output of the ps command showing the tracked state as running
 
 3. Bounded-buffer logging
 
